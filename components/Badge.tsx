@@ -1,4 +1,4 @@
-import { ClientStatus, ClientTag, DealStage, InteractionType, ServiceType } from '@/lib/types'
+import { ClientStatus, ClientTag, DealStage, InteractionType, ServiceType, TaskPriority } from '@/lib/types'
 
 const statusStyles: Record<ClientStatus, { bg: string; text: string; label: string }> = {
   lead: { bg: 'rgba(255,170,0,0.15)', text: '#ffaa00', label: 'Lead' },
@@ -71,6 +71,21 @@ export function TagBadge({ tag }: { tag: ClientTag }) {
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" style={{ background: s.bg, color: s.text }}>
       {tag}
+    </span>
+  )
+}
+
+const priorityStyles: Record<TaskPriority, { bg: string; text: string; label: string }> = {
+  low: { bg: 'rgba(136,136,170,0.15)', text: '#8888aa', label: 'Low' },
+  medium: { bg: 'rgba(255,170,0,0.15)', text: '#ffaa00', label: 'Medium' },
+  high: { bg: 'rgba(255,68,68,0.15)', text: '#ff4444', label: 'High' },
+}
+
+export function PriorityBadge({ priority }: { priority: TaskPriority }) {
+  const s = priorityStyles[priority]
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold" style={{ background: s.bg, color: s.text }}>
+      {s.label}
     </span>
   )
 }

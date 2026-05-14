@@ -4,6 +4,8 @@ export type DealStage = 'new_enquiry' | 'proposal_sent' | 'negotiating' | 'won' 
 export type ServiceType = 'websites' | 'automation' | 'advertising' | 'tiktok_shop'
 export type ClientTag = 'Hot Lead' | 'Follow Up' | 'VIP' | 'Cold Lead' | 'Active Client' | 'Inactive'
 export type ClientSource = 'Referral' | 'TikTok' | 'Instagram' | 'Facebook' | 'Google' | 'Cold Outreach' | 'Website' | 'Other'
+export type TaskPriority = 'low' | 'medium' | 'high'
+export type TaskStatus = 'pending' | 'complete'
 
 export interface Profile {
   id: string
@@ -54,5 +56,17 @@ export interface Deal {
   stage: DealStage
   notes: string | null
   expected_close_date: string | null
+  created_at: string
+}
+
+export interface Task {
+  id: string
+  title: string
+  description: string | null
+  due_date: string | null
+  assigned_to: string | null
+  client_id: string | null
+  priority: TaskPriority
+  status: TaskStatus
   created_at: string
 }

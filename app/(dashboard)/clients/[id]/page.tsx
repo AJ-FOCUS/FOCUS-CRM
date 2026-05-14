@@ -6,8 +6,11 @@ import { ArrowLeft, Edit, Building2, Mail, Phone, AtSign, Globe, Briefcase, Aler
 import { StatusBadge, ServiceBadge, StageBadge, InteractionBadge, TagBadge } from '@/components/Badge'
 import AddInteractionForm from '@/components/AddInteractionForm'
 import AddDealForm from '@/components/AddDealForm'
+import AddTaskForm from '@/components/AddTaskForm'
+import TaskCompleteButton from '@/components/TaskCompleteButton'
 import DeleteClientButton from '@/components/DeleteClientButton'
-import { ClientTag, ServiceType } from '@/lib/types'
+import { PriorityBadge } from '@/components/Badge'
+import { ClientTag, ServiceType, TaskPriority } from '@/lib/types'
 
 export default async function ClientPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -18,12 +21,14 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
     { data: interactions },
     { data: deals },
     { data: profiles },
+    { data: tasks },
     { data: { user } },
   ] = await Promise.all([
     supabase.from('clients').select('*, profiles(full_name)').eq('id', id).single(),
     supabase.from('interactions').select('*, profiles(full_name)').eq('client_id', id).order('date', { ascending: false }),
     supabase.from('deals').select('*').eq('client_id', id).order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name').order('full_name'),
+    supabase.from('tasks').select('*, profiles(full_name)').eq('client_id', id).order('due_date', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
     supabase.auth.getUser(),
   ])
 
@@ -33,6 +38,8 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  const pendingTasks = (tasks ?? []).filter(t => t.status === 'pending')
+  const overdueTasks = pendingTasks.filter(t => t.due_date && new Date(t.due_date + 'T00:00:00') < today)
   const isOverdue = client.next_action_date
     ? new Date(client.next_action_date + 'T00:00:00') < today
     : false
@@ -191,6 +198,69 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
         {/* Right column - Timeline + Deals */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Tasks */}
+          <div className="rounded-xl" style={{ background: '#111118', border: '1px solid #1e1e2e' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e2e]">
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-white">Tasks</h2>
+                {overdueTasks.length > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(255,68,68,0.15)', color: '#ff4444' }}>
+                    {overdueTasks.length} overdue
+                  </span>
+                )}
+              </div>
+              <span className="text-xs" style={{ color: '#555570' }}>
+                {pendingTasks.length} pending
+              </span>
+            </div>
+
+            {tasks && tasks.length > 0 && (
+              <div className="divide-y divide-[#1e1e2e]">
+                {tasks.map((task: any) => {
+                  const isOverdue = task.status === 'pending' && task.due_date && new Date(task.due_date + 'T00:00:00') < today
+                  const isDone = task.status === 'complete'
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex items-center gap-3 px-5 py-3"
+                      style={isOverdue ? { borderLeft: '3px solid #ff4444' } : {}}
+                    >
+                      <TaskCompleteButton taskId={task.id} status={task.status} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <PriorityBadge priority={task.priority as TaskPriority} />
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: isDone ? '#555570' : 'white', textDecoration: isDone ? 'line-through' : 'none' }}
+                          >
+                            {task.title}
+                          </span>
+                        </div>
+                        {task.description && (
+                          <p className="text-xs mt-0.5 truncate" style={{ color: '#555570' }}>{task.description}</p>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        {task.due_date && (
+                          <div className="text-xs" style={{ color: isOverdue ? '#ff4444' : '#555570' }}>
+                            {format(new Date(task.due_date + 'T00:00:00'), 'd MMM yyyy')}
+                          </div>
+                        )}
+                        {task.profiles?.full_name && (
+                          <div className="text-xs mt-0.5" style={{ color: '#555570' }}>{task.profiles.full_name}</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="px-5 py-4 border-t border-[#1e1e2e]">
+              <AddTaskForm clientId={id} profiles={profiles ?? []} />
+            </div>
+          </div>
+
           {/* Deals */}
           <div className="rounded-xl" style={{ background: '#111118', border: '1px solid #1e1e2e' }}>
             <div className="px-5 py-4 border-b border-[#1e1e2e]">

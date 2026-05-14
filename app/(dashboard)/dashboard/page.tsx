@@ -2,10 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import {
   Users, TrendingUp, Trophy, Plus, Phone, Mail, Video,
-  MessageSquare, Calendar, Globe, AlertCircle, UserPlus, DollarSign,
+  MessageSquare, Calendar, Globe, CheckSquare, UserPlus, DollarSign, AlertCircle,
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
-import { InteractionType } from '@/lib/types'
+import { InteractionType, TaskPriority } from '@/lib/types'
+import { PriorityBadge } from '@/components/Badge'
+import TaskCompleteButton from '@/components/TaskCompleteButton'
 
 const interactionIcons: Record<InteractionType, React.ReactNode> = {
   call: <Phone size={14} />,
@@ -22,13 +24,17 @@ export default async function DashboardPage() {
   const now = new Date()
   const monthStart = startOfMonth(now).toISOString()
   const monthEnd = endOfMonth(now).toISOString()
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = now.toISOString().split('T')[0]
+  const sevenDaysLater = new Date(now)
+  sevenDaysLater.setDate(sevenDaysLater.getDate() + 7)
+  const sevenDaysStr = sevenDaysLater.toISOString().split('T')[0]
 
   const [
     { count: totalClients },
     { count: activeDeals },
     { count: dealsWon },
-    { count: overdueActions },
+    { count: overdueTasks },
+    { data: upcomingTasks },
     { data: recentInteractions },
     { data: recentClients },
     { data: recentDeals },
@@ -36,7 +42,14 @@ export default async function DashboardPage() {
     supabase.from('clients').select('*', { count: 'exact', head: true }),
     supabase.from('deals').select('*', { count: 'exact', head: true }).not('stage', 'in', '("won","lost")'),
     supabase.from('deals').select('*', { count: 'exact', head: true }).eq('stage', 'won').gte('created_at', monthStart).lte('created_at', monthEnd),
-    supabase.from('clients').select('*', { count: 'exact', head: true }).not('next_action_date', 'is', null).lt('next_action_date', todayStr),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'pending').not('due_date', 'is', null).lt('due_date', todayStr),
+    supabase.from('tasks')
+      .select('id, title, due_date, priority, status, profiles(full_name), clients(id, full_name)')
+      .eq('status', 'pending')
+      .not('due_date', 'is', null)
+      .lte('due_date', sevenDaysStr)
+      .order('due_date', { ascending: true })
+      .limit(6),
     supabase.from('interactions')
       .select('*, clients(full_name, id), profiles(full_name)')
       .order('created_at', { ascending: false })
@@ -51,14 +64,16 @@ export default async function DashboardPage() {
       .limit(5),
   ])
 
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
   const stats = [
     { label: 'Total Clients', value: totalClients ?? 0, icon: Users, color: '#0066FF' },
     { label: 'Active Deals', value: activeDeals ?? 0, icon: TrendingUp, color: '#ffaa00' },
     { label: 'Deals Won This Month', value: dealsWon ?? 0, icon: Trophy, color: '#00cc66' },
-    { label: 'Overdue Actions', value: overdueActions ?? 0, icon: AlertCircle, color: '#ff4444' },
+    { label: 'Overdue Tasks', value: overdueTasks ?? 0, icon: CheckSquare, color: '#ff4444' },
   ]
 
-  // Merge activity feed: interactions + new clients + new deals, sort by date desc
   type FeedItem =
     | { kind: 'interaction'; ts: string; data: any }
     | { kind: 'client'; ts: string; data: any }
@@ -89,9 +104,17 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="rounded-xl p-5" style={{ background: '#111118', border: `1px solid ${color === '#ff4444' && value > 0 ? 'rgba(255,68,68,0.3)' : '#1e1e2e'}` }}>
+          <div
+            key={label}
+            className="rounded-xl p-5"
+            style={{
+              background: '#111118',
+              border: `1px solid ${color === '#ff4444' && value > 0 ? 'rgba(255,68,68,0.3)' : '#1e1e2e'}`,
+            }}
+          >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium leading-tight" style={{ color: '#8888aa' }}>{label}</span>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color}20` }}>
@@ -105,6 +128,82 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      {/* Upcoming Tasks */}
+      <div className="rounded-xl mb-6" style={{ background: '#111118', border: '1px solid #1e1e2e' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2e]">
+          <div className="flex items-center gap-3">
+            <h2 className="font-semibold text-white">Upcoming Tasks</h2>
+            {(overdueTasks ?? 0) > 0 && (
+              <span
+                className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-semibold"
+                style={{ background: 'rgba(255,68,68,0.15)', color: '#ff4444' }}
+              >
+                <AlertCircle size={10} />
+                {overdueTasks} overdue
+              </span>
+            )}
+          </div>
+          <Link href="/tasks" className="text-xs font-medium" style={{ color: '#0066FF' }}>
+            View all tasks →
+          </Link>
+        </div>
+
+        {!upcomingTasks?.length ? (
+          <div className="px-6 py-8 text-center">
+            <p className="text-sm" style={{ color: '#8888aa' }}>No tasks due in the next 7 days.</p>
+            <Link
+              href="/tasks"
+              className="inline-flex items-center gap-1.5 mt-3 text-xs font-medium"
+              style={{ color: '#0066FF' }}
+            >
+              <Plus size={12} /> Add a task
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#1e1e2e]">
+            {upcomingTasks.map((task: any) => {
+              const isOverdue = task.due_date && new Date(task.due_date + 'T00:00:00') < today
+              return (
+                <div
+                  key={task.id}
+                  className="flex items-center gap-4 px-6 py-3"
+                  style={isOverdue ? { borderLeft: '3px solid #ff4444' } : {}}
+                >
+                  <TaskCompleteButton taskId={task.id} status={task.status} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <PriorityBadge priority={task.priority as TaskPriority} />
+                      <span className="text-sm font-medium text-white truncate">{task.title}</span>
+                    </div>
+                    {task.clients && (
+                      <Link
+                        href={`/clients/${task.clients.id}`}
+                        className="text-xs hover:underline mt-0.5 block"
+                        style={{ color: '#0066FF' }}
+                      >
+                        {task.clients.full_name}
+                      </Link>
+                    )}
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    <div className="text-xs font-medium" style={{ color: isOverdue ? '#ff4444' : '#8888aa' }}>
+                      {isOverdue ? 'Overdue · ' : ''}
+                      {task.due_date && format(new Date(task.due_date + 'T00:00:00'), 'd MMM')}
+                    </div>
+                    {task.profiles?.full_name && (
+                      <div className="text-xs mt-0.5" style={{ color: '#555570' }}>
+                        {task.profiles.full_name.split(' ')[0]}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Team Activity */}
       <div className="rounded-xl" style={{ background: '#111118', border: '1px solid #1e1e2e' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2e]">
           <h2 className="font-semibold text-white">Team Activity</h2>
@@ -119,7 +218,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-[#1e1e2e]">
-            {feed.map((item, idx) => {
+            {feed.map((item) => {
               if (item.kind === 'interaction') {
                 const i = item.data
                 return (

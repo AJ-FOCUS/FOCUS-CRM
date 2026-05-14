@@ -9,6 +9,7 @@ import {
   Handshake,
   Kanban,
   BarChart2,
+  CheckSquare,
   LogOut,
   Menu,
   X,
@@ -21,6 +22,7 @@ const navItems = [
   { href: '/clients', label: 'Clients', icon: Users },
   { href: '/deals', label: 'Deals', icon: Handshake },
   { href: '/pipeline', label: 'Pipeline', icon: Kanban },
+  { href: '/tasks', label: 'Tasks', icon: CheckSquare },
   { href: '/reports', label: 'Reports', icon: BarChart2 },
 ]
 
