@@ -1,4 +1,4 @@
-import { ClientStatus, DealStage, InteractionType, ServiceType } from '@/lib/types'
+import { ClientStatus, ClientTag, DealStage, InteractionType, ServiceType } from '@/lib/types'
 
 const statusStyles: Record<ClientStatus, { bg: string; text: string; label: string }> = {
   lead: { bg: 'rgba(255,170,0,0.15)', text: '#ffaa00', label: 'Lead' },
@@ -19,6 +19,15 @@ const serviceStyles: Record<ServiceType, { bg: string; text: string; label: stri
   automation: { bg: 'rgba(160,80,255,0.15)', text: '#a050ff', label: 'Automation' },
   advertising: { bg: 'rgba(255,100,0,0.15)', text: '#ff6400', label: 'Advertising' },
   tiktok_shop: { bg: 'rgba(0,200,200,0.15)', text: '#00c8c8', label: 'TikTok Shop' },
+}
+
+const tagStyles: Record<ClientTag, { bg: string; text: string }> = {
+  'Hot Lead': { bg: 'rgba(255,68,68,0.15)', text: '#ff4444' },
+  'Follow Up': { bg: 'rgba(255,170,0,0.15)', text: '#ffaa00' },
+  'VIP': { bg: 'rgba(160,80,255,0.15)', text: '#a050ff' },
+  'Cold Lead': { bg: 'rgba(136,136,170,0.15)', text: '#8888aa' },
+  'Active Client': { bg: 'rgba(0,204,102,0.15)', text: '#00cc66' },
+  'Inactive': { bg: 'rgba(85,85,112,0.15)', text: '#555570' },
 }
 
 const interactionStyles: Record<InteractionType, { label: string }> = {
@@ -53,6 +62,15 @@ export function ServiceBadge({ service }: { service: ServiceType }) {
   return (
     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{ background: s.bg, color: s.text }}>
       {s.label}
+    </span>
+  )
+}
+
+export function TagBadge({ tag }: { tag: ClientTag }) {
+  const s = tagStyles[tag]
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" style={{ background: s.bg, color: s.text }}>
+      {tag}
     </span>
   )
 }

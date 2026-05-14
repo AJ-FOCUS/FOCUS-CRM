@@ -2,12 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { ArrowLeft, Edit, Building2, Mail, Phone, AtSign, Globe, Briefcase } from 'lucide-react'
-import { StatusBadge, ServiceBadge, StageBadge, InteractionBadge } from '@/components/Badge'
+import { ArrowLeft, Edit, Building2, Mail, Phone, AtSign, Globe, Briefcase, AlertCircle, MapPin } from 'lucide-react'
+import { StatusBadge, ServiceBadge, StageBadge, InteractionBadge, TagBadge } from '@/components/Badge'
 import AddInteractionForm from '@/components/AddInteractionForm'
 import AddDealForm from '@/components/AddDealForm'
 import DeleteClientButton from '@/components/DeleteClientButton'
-import { ServiceType } from '@/lib/types'
+import { ClientTag, ServiceType } from '@/lib/types'
 
 export default async function ClientPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -31,6 +31,12 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
   const totalDealValue = deals?.filter(d => d.stage === 'won').reduce((sum, d) => sum + d.value, 0) ?? 0
 
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const isOverdue = client.next_action_date
+    ? new Date(client.next_action_date + 'T00:00:00') < today
+    : false
+
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto">
       {/* Header */}
@@ -42,6 +48,9 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold text-white">{client.full_name}</h1>
             <StatusBadge status={client.status} />
+            {(client.tags ?? []).map((tag: ClientTag) => (
+              <TagBadge key={tag} tag={tag} />
+            ))}
           </div>
           {client.company && (
             <p className="text-sm mt-1 flex items-center gap-1.5" style={{ color: '#8888aa' }}>
@@ -62,7 +71,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column - Profile info */}
+        {/* Left column */}
         <div className="space-y-4">
           {/* Contact */}
           <div className="rounded-xl p-5" style={{ background: '#111118', border: '1px solid #1e1e2e' }}>
@@ -122,8 +131,16 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span style={{ color: '#8888aa' }}>Assigned to</span>
-                <span className="text-white">{client.profiles?.full_name ?? 'Unassigned'}</span>
+                <span className="text-white">{(client as any).profiles?.full_name ?? 'Unassigned'}</span>
               </div>
+              {client.source && (
+                <div className="flex justify-between">
+                  <span style={{ color: '#8888aa' }}>Source</span>
+                  <span className="text-white flex items-center gap-1.5">
+                    <MapPin size={12} style={{ color: '#555570' }} /> {client.source}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span style={{ color: '#8888aa' }}>Date added</span>
                 <span className="text-white">{format(new Date(client.created_at), 'd MMM yyyy')}</span>
@@ -134,6 +151,34 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
           </div>
+
+          {/* Next Action */}
+          {(client.next_action_description || client.next_action_date) && (
+            <div
+              className="rounded-xl p-5"
+              style={{
+                background: isOverdue ? 'rgba(255,68,68,0.08)' : '#111118',
+                border: `1px solid ${isOverdue ? 'rgba(255,68,68,0.3)' : '#1e1e2e'}`,
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <AlertCircle size={13} style={{ color: isOverdue ? '#ff4444' : '#8888aa' }} />
+                <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: isOverdue ? '#ff4444' : '#8888aa' }}>
+                  Next Action{isOverdue ? ' — Overdue' : ''}
+                </h3>
+              </div>
+              <div className="space-y-1">
+                {client.next_action_description && (
+                  <p className="text-sm text-white">{client.next_action_description}</p>
+                )}
+                {client.next_action_date && (
+                  <p className="text-xs" style={{ color: isOverdue ? '#ff6666' : '#8888aa' }}>
+                    Due: {format(new Date(client.next_action_date + 'T00:00:00'), 'd MMMM yyyy')}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           {client.notes && (

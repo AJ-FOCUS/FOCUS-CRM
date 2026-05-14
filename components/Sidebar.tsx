@@ -7,6 +7,8 @@ import {
   LayoutDashboard,
   Users,
   Handshake,
+  Kanban,
+  BarChart2,
   LogOut,
   Menu,
   X,
@@ -18,6 +20,8 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/clients', label: 'Clients', icon: Users },
   { href: '/deals', label: 'Deals', icon: Handshake },
+  { href: '/pipeline', label: 'Pipeline', icon: Kanban },
+  { href: '/reports', label: 'Reports', icon: BarChart2 },
 ]
 
 export default function Sidebar() {

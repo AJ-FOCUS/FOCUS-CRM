@@ -2,6 +2,8 @@ export type ClientStatus = 'lead' | 'active' | 'inactive'
 export type InteractionType = 'call' | 'email' | 'meeting' | 'whatsapp' | 'zoom' | 'other'
 export type DealStage = 'new_enquiry' | 'proposal_sent' | 'negotiating' | 'won' | 'lost'
 export type ServiceType = 'websites' | 'automation' | 'advertising' | 'tiktok_shop'
+export type ClientTag = 'Hot Lead' | 'Follow Up' | 'VIP' | 'Cold Lead' | 'Active Client' | 'Inactive'
+export type ClientSource = 'Referral' | 'TikTok' | 'Instagram' | 'Facebook' | 'Google' | 'Cold Outreach' | 'Website' | 'Other'
 
 export interface Profile {
   id: string
@@ -24,6 +26,10 @@ export interface Client {
   notes: string | null
   assigned_to: string | null
   status: ClientStatus
+  tags: ClientTag[]
+  next_action_description: string | null
+  next_action_date: string | null
+  source: ClientSource | null
   created_at: string
   assigned_profile?: Profile
 }

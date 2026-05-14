@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Client, ClientStatus, Profile, ServiceType } from '@/lib/types'
+import { Client, ClientSource, ClientStatus, ClientTag, Profile, ServiceType } from '@/lib/types'
 
 const services: { value: ServiceType; label: string }[] = [
   { value: 'websites', label: 'Websites' },
@@ -11,6 +11,19 @@ const services: { value: ServiceType; label: string }[] = [
   { value: 'advertising', label: 'Advertising' },
   { value: 'tiktok_shop', label: 'TikTok Shop' },
 ]
+
+const ALL_TAGS: ClientTag[] = ['Hot Lead', 'Follow Up', 'VIP', 'Cold Lead', 'Active Client', 'Inactive']
+
+const tagColors: Record<ClientTag, { border: string; text: string; activeBg: string }> = {
+  'Hot Lead': { border: '#ff4444', text: '#ff4444', activeBg: 'rgba(255,68,68,0.15)' },
+  'Follow Up': { border: '#ffaa00', text: '#ffaa00', activeBg: 'rgba(255,170,0,0.15)' },
+  'VIP': { border: '#a050ff', text: '#a050ff', activeBg: 'rgba(160,80,255,0.15)' },
+  'Cold Lead': { border: '#8888aa', text: '#8888aa', activeBg: 'rgba(136,136,170,0.15)' },
+  'Active Client': { border: '#00cc66', text: '#00cc66', activeBg: 'rgba(0,204,102,0.15)' },
+  'Inactive': { border: '#555570', text: '#555570', activeBg: 'rgba(85,85,112,0.15)' },
+}
+
+const sources: ClientSource[] = ['Referral', 'TikTok', 'Instagram', 'Facebook', 'Google', 'Cold Outreach', 'Website', 'Other']
 
 interface Props {
   profiles: Pick<Profile, 'id' | 'full_name'>[]
@@ -36,6 +49,10 @@ export default function ClientForm({ profiles, client }: Props) {
     notes: client?.notes ?? '',
     assigned_to: client?.assigned_to ?? '',
     status: client?.status ?? 'lead' as ClientStatus,
+    tags: client?.tags ?? [] as ClientTag[],
+    next_action_description: client?.next_action_description ?? '',
+    next_action_date: client?.next_action_date ?? '',
+    source: client?.source ?? '' as ClientSource | '',
   })
 
   function toggleService(service: ServiceType) {
@@ -44,6 +61,15 @@ export default function ClientForm({ profiles, client }: Props) {
       services_interested: f.services_interested.includes(service)
         ? f.services_interested.filter(s => s !== service)
         : [...f.services_interested, service],
+    }))
+  }
+
+  function toggleTag(tag: ClientTag) {
+    setForm(f => ({
+      ...f,
+      tags: f.tags.includes(tag)
+        ? f.tags.filter(t => t !== tag)
+        : [...f.tags, tag],
     }))
   }
 
@@ -63,6 +89,9 @@ export default function ClientForm({ profiles, client }: Props) {
       linkedin: form.linkedin || null,
       twitter: form.twitter || null,
       notes: form.notes || null,
+      next_action_description: form.next_action_description || null,
+      next_action_date: form.next_action_date || null,
+      source: form.source || null,
     }
 
     let result
@@ -151,6 +180,55 @@ export default function ClientForm({ profiles, client }: Props) {
       </div>
 
       <div className="rounded-xl p-6 space-y-4" style={{ background: '#111118', border: '1px solid #1e1e2e' }}>
+        <h2 className="text-sm font-semibold text-white uppercase tracking-wider">Labels</h2>
+        <div className="flex flex-wrap gap-2">
+          {ALL_TAGS.map(tag => {
+            const active = form.tags.includes(tag)
+            const c = tagColors[tag]
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border"
+                style={{
+                  background: active ? c.activeBg : '#0f0f1a',
+                  borderColor: active ? c.border : '#1e1e2e',
+                  color: active ? c.text : '#8888aa',
+                }}
+              >
+                {tag}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="rounded-xl p-6 space-y-4" style={{ background: '#111118', border: '1px solid #1e1e2e' }}>
+        <h2 className="text-sm font-semibold text-white uppercase tracking-wider">Next Action</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label>Description</label>
+            <input
+              className={inputClass}
+              value={form.next_action_description}
+              onChange={e => setForm(f => ({ ...f, next_action_description: e.target.value }))}
+              placeholder="e.g. Send proposal"
+            />
+          </div>
+          <div>
+            <label>Date</label>
+            <input
+              className={inputClass}
+              type="date"
+              value={form.next_action_date}
+              onChange={e => setForm(f => ({ ...f, next_action_date: e.target.value }))}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl p-6 space-y-4" style={{ background: '#111118', border: '1px solid #1e1e2e' }}>
         <h2 className="text-sm font-semibold text-white uppercase tracking-wider">CRM Details</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -159,6 +237,15 @@ export default function ClientForm({ profiles, client }: Props) {
               <option value="lead">Lead</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div>
+            <label>How did they find us?</label>
+            <select className={inputClass} value={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value as ClientSource | '' }))}>
+              <option value="">— Select source —</option>
+              {sources.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
           </div>
           <div>
