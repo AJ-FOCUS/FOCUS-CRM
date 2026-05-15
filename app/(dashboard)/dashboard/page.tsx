@@ -8,6 +8,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { InteractionType, TaskPriority } from '@/lib/types'
 import { PriorityBadge } from '@/components/Badge'
 import TaskCompleteButton from '@/components/TaskCompleteButton'
+import FollowUpAutomation from '@/components/FollowUpAutomation'
 
 const interactionIcons: Record<InteractionType, React.ReactNode> = {
   call: <Phone size={14} />,
@@ -105,6 +106,8 @@ export default async function DashboardPage() {
           Add Client
         </Link>
       </div>
+
+      <FollowUpAutomation />
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
