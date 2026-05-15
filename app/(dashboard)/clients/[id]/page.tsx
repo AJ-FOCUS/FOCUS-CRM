@@ -84,6 +84,16 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           <div className="rounded-xl p-5" style={{ background: '#111118', border: '1px solid #1e1e2e' }}>
             <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: '#8888aa' }}>Contact</h3>
             <div className="space-y-3">
+              {(client as any).website_url && (
+                <a
+                  href={/^https?:\/\//i.test((client as any).website_url) ? (client as any).website_url : `https://${(client as any).website_url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-white hover:text-[#0066FF] transition-colors"
+                >
+                  <Globe size={14} style={{ color: '#555570' }} /> {(client as any).website_url}
+                </a>
+              )}
               {client.email && (
                 <a href={`mailto:${client.email}`} className="flex items-center gap-2 text-sm text-white hover:text-[#0066FF] transition-colors">
                   <Mail size={14} style={{ color: '#555570' }} /> {client.email}

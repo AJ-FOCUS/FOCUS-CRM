@@ -32,6 +32,7 @@ export interface Client {
   next_action_description: string | null
   next_action_date: string | null
   source: ClientSource | null
+  website_url: string | null
   created_at: string
   assigned_profile?: Profile
 }

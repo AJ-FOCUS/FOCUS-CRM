@@ -53,6 +53,7 @@ export default function ClientForm({ profiles, client }: Props) {
     next_action_description: client?.next_action_description ?? '',
     next_action_date: client?.next_action_date ?? '',
     source: client?.source ?? '' as ClientSource | '',
+    website_url: client?.website_url ?? '',
   })
 
   function toggleService(service: ServiceType) {
@@ -92,6 +93,7 @@ export default function ClientForm({ profiles, client }: Props) {
       next_action_description: form.next_action_description || null,
       next_action_date: form.next_action_date || null,
       source: form.source || null,
+      website_url: form.website_url || null,
     }
 
     let result
@@ -132,6 +134,10 @@ export default function ClientForm({ profiles, client }: Props) {
           <div>
             <label>Phone</label>
             <input className={inputClass} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+44 7700 900000" />
+          </div>
+          <div className="sm:col-span-2">
+            <label>Website URL</label>
+            <input className={inputClass} type="url" value={form.website_url} onChange={e => setForm(f => ({ ...f, website_url: e.target.value }))} placeholder="https://example.com" />
           </div>
         </div>
       </div>
