@@ -1,5 +1,6 @@
 import Sidebar from '@/components/Sidebar'
 import GlobalSearch from '@/components/GlobalSearch'
+import TaskReminderPopup from '@/components/TaskReminderPopup'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,6 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+      <TaskReminderPopup />
     </div>
   )
 }
