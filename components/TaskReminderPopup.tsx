@@ -14,8 +14,6 @@ type ReminderTask = {
   clients: { id: string; full_name: string } | null
 }
 
-const SESSION_KEY = 'task_reminders_shown'
-
 const PRIORITY_COLOR: Record<string, string> = {
   high: '#ff4444',
   medium: '#ffaa00',
@@ -28,8 +26,6 @@ export default function TaskReminderPopup() {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
-    if (sessionStorage.getItem(SESSION_KEY)) return
-
     async function load() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -49,7 +45,6 @@ export default function TaskReminderPopup() {
 
       if (!data || data.length === 0) return
 
-      sessionStorage.setItem(SESSION_KEY, '1')
       setTasks(data as unknown as ReminderTask[])
       setVisible(true)
       // Defer so the browser paints the off-screen position first
