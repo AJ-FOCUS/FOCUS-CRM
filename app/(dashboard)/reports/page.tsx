@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { format, startOfMonth, endOfMonth, startOfYear } from 'date-fns'
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 
 const SERVICE_LABELS: Record<string, string> = {
   websites: 'Websites',
@@ -158,25 +158,24 @@ export default async function ReportsPage() {
   const supabase = await createClient()
 
   const now = new Date()
-  const monthStart = startOfMonth(now).toISOString()
-  const monthEnd = endOfMonth(now).toISOString()
-  const yearStart = startOfYear(now).toISOString()
+  const monthStartDate = format(startOfMonth(now), 'yyyy-MM-dd')
+  const monthEndDate = format(endOfMonth(now), 'yyyy-MM-dd')
+  const yearStartDate = `${now.getFullYear()}-01-01`
+  const yearEndDate = `${now.getFullYear()}-12-31`
 
   // Last 6 calendar months
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
     return {
       label: format(d, 'MMM'),
-      start: new Date(d.getFullYear(), d.getMonth(), 1).toISOString(),
-      end: new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999).toISOString(),
+      start: format(startOfMonth(d), 'yyyy-MM-dd'),
+      end: format(endOfMonth(d), 'yyyy-MM-dd'),
     }
   })
 
-  const sixMonthsAgo = months[0].start
-
   const { data: allDeals } = await supabase
     .from('deals')
-    .select('id, value, stage, service_type, created_at, clients(profiles(full_name))')
+    .select('id, value, stage, service_type, expected_close_date, clients(profiles(full_name))')
 
   const deals = (allDeals ?? []) as any[]
 
@@ -186,10 +185,10 @@ export default async function ReportsPage() {
 
   const totalPipeline = pipelineDeals.reduce((s, d) => s + d.value, 0)
   const wonThisMonth = wonDeals
-    .filter(d => d.created_at >= monthStart && d.created_at <= monthEnd)
+    .filter(d => d.expected_close_date >= monthStartDate && d.expected_close_date <= monthEndDate)
     .reduce((s, d) => s + d.value, 0)
   const wonThisYear = wonDeals
-    .filter(d => d.created_at >= yearStart)
+    .filter(d => d.expected_close_date >= yearStartDate && d.expected_close_date <= yearEndDate)
     .reduce((s, d) => s + d.value, 0)
   const closedCount = wonDeals.length + lostDeals.length
   const winRate = closedCount > 0 ? Math.round((wonDeals.length / closedCount) * 100) : 0
@@ -211,12 +210,11 @@ export default async function ReportsPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 8)
 
-  // Monthly revenue trend (won deals, last 6 months)
-  const recentWon = wonDeals.filter(d => d.created_at >= sixMonthsAgo)
+  // Monthly revenue trend (won deals, last 6 months by expected_close_date)
   const monthlyTrend = months.map(m => ({
     label: m.label,
-    value: recentWon
-      .filter((d: any) => d.created_at >= m.start && d.created_at <= m.end)
+    value: wonDeals
+      .filter((d: any) => d.expected_close_date >= m.start && d.expected_close_date <= m.end)
       .reduce((s: number, d: any) => s + d.value, 0),
   }))
 

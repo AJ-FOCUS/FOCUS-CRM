@@ -24,6 +24,8 @@ export default async function DashboardPage() {
   const now = new Date()
   const monthStart = startOfMonth(now).toISOString()
   const monthEnd = endOfMonth(now).toISOString()
+  const monthStartDate = format(startOfMonth(now), 'yyyy-MM-dd')
+  const monthEndDate = format(endOfMonth(now), 'yyyy-MM-dd')
   const todayStr = now.toISOString().split('T')[0]
   const sevenDaysLater = new Date(now)
   sevenDaysLater.setDate(sevenDaysLater.getDate() + 7)
@@ -41,7 +43,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase.from('clients').select('*', { count: 'exact', head: true }),
     supabase.from('deals').select('*', { count: 'exact', head: true }).not('stage', 'in', '("won","lost")'),
-    supabase.from('deals').select('*', { count: 'exact', head: true }).eq('stage', 'won').gte('created_at', monthStart).lte('created_at', monthEnd),
+    supabase.from('deals').select('*', { count: 'exact', head: true }).eq('stage', 'won').gte('expected_close_date', monthStartDate).lte('expected_close_date', monthEndDate),
     supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'pending').not('due_date', 'is', null).lt('due_date', todayStr),
     supabase.from('tasks')
       .select('id, title, due_date, priority, status, profiles(full_name), clients(id, full_name)')
